@@ -13,8 +13,10 @@
 /* We need to keep keys and values */
 typedef struct _hashmap_element{
     char* key;
+    size_t key_length;
     int in_use;
     any_t data;
+    size_t data_length;
 } hashmap_element;
 
 /* A hashmap has some maximum size and current size,
@@ -245,7 +247,7 @@ int hashmap_rehash(map_t in){
         if (curr[i].in_use == 0)
             continue;
 
-        status = hashmap_put(m, curr[i].key, curr[i].data);
+        status = hashmap_put(m, curr[i].key, curr[i].key_length, curr[i].data, curr[i].data_length);
         if (status != MAP_OK)
             return status;
     }
@@ -258,7 +260,11 @@ int hashmap_rehash(map_t in){
 /*
  * Add a pointer to the hashmap with some key
  */
-int hashmap_put(map_t in, char* key, any_t value){
+int hashmap_put(map_t in,
+                char* key,
+                size_t skey,
+                any_t value,
+                size_t svalue){
     int index;
     hashmap_map* m;
 
@@ -275,8 +281,19 @@ int hashmap_put(map_t in, char* key, any_t value){
     }
 
     /* Set the data */
-    m->data[index].data = value;
-    m->data[index].key = key;
+    if (m->data[index].in_use == 0) {
+        char *_key = malloc(sizeof(skey));
+        memcpy(_key, key, skey);
+        m->data[index].key = _key;
+        m->data[index].key_length = skey;
+    } else {
+        free(m->data[index].data);
+    }
+
+    char *_value = malloc(sizeof(svalue));
+    memcpy(_value, value, svalue);
+    m->data[index].data = _value;
+    m->data[index].data_length = svalue;
     m->data[index].in_use = 1;
     m->size++;
 

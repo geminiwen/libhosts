@@ -19,5 +19,7 @@ int main() {
 
     hashmap_iterate(map, iterator, NULL);
 
+    destroy_records(map);
+
     return 0;
 }
